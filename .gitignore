@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /example.exe
 /example.exe
+/Content/Sound/speak1.ogg
+/Content/Sound/speak2.ogg
+/Content/Sound/speak3.ogg
