@@ -6,6 +6,9 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
 
 namespace Focus_App
 {
@@ -13,6 +16,7 @@ namespace Focus_App
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        private SpriteFont _font;
 
         Process process;
 
@@ -20,8 +24,20 @@ namespace Focus_App
 
         Renderer renderer;
 
-        GameObject Stario;
-        string STARIO_TEXTURE = "stario";
+        Stario stario;
+        string STARIO_TEXTURE = "Textures/stario",
+               STARIO_BLINK = "Textures/stario_blink",
+               STARIO_TALK = "Textures/stario_talk",
+               STARIO_TRANSFORM = "Textures/stario_transform",
+               STARIO_RING = "Textures/stario_ring";
+        GameObject Textbox;
+        string TEXTBOX = "Textures/textbox";
+
+        SoundEffect[] talk;
+
+        Song song;
+
+        List<GameObject> gameObjects = new List<GameObject>();
 
         public Game1()
         {
@@ -70,7 +86,25 @@ namespace Focus_App
             Window.ClientSizeChanged += new EventHandler<EventArgs>(SetWindowSize);
             SetWindowSize(null, null);
 
-            Stario = new GameObject().T(renderer.CreateSprite(STARIO_TEXTURE));
+            stario = new Stario().T(new AnimationCollection(new List<Animation> {
+                renderer.CreateAnimation(new List<string> { STARIO_TEXTURE, STARIO_BLINK }, new List<float> { 1.9f, 0.1f }),
+                renderer.CreateAnimation(new List<string> { STARIO_TEXTURE, STARIO_TALK }, new List<float> { 0.15f, 0.15f }),
+                renderer.CreateAnimation(new List<string> { STARIO_TRANSFORM, STARIO_RING }, new List<float> { 0.10f })
+            })) as Stario;
+            Textbox = new GameObject().T(renderer.CreateSprite(TEXTBOX)).P(200, -200);
+
+            gameObjects.Add(stario);
+            gameObjects.Add(Textbox);
+
+            talk = new SoundEffect[] { Content.Load<SoundEffect>("Sound/talk_new") };//, Content.Load<SoundEffect>("Sound/speak2"), Content.Load<SoundEffect>("Sound/speak3") };
+            _font = Content.Load<SpriteFont>("Textures/Font");
+
+            song = Content.Load<Song>("Sound/Music/focus");
+            MediaPlayer.IsRepeating = true;
+            MediaPlayer.Play(song);
+
+
+            LevelReader.SetLevel("tutorial");
 
             // TODO: use this.Content to load your game content here
         }
@@ -79,12 +113,20 @@ namespace Focus_App
         {
             renderer.SetWindowSize(new Vector2(Window.ClientBounds.Width, Window.ClientBounds.Height));
         }
+        public Vector2 GetWindowSize() {
+            return new Vector2(Window.ClientBounds.Width, Window.ClientBounds.Height);
+        }
+
+        float speakTimer = 0;
+        bool talking = false;
+        bool ringMode = false;
+        bool switchButton = false;
 
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
-                process.CloseMainWindow();
+                process?.CloseMainWindow();
                 process?.Kill();
                 Exit();
             }
@@ -95,16 +137,58 @@ namespace Focus_App
 
             // TODO: Add your update logic here
 
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                talking = true;
+                speakTimer -= gameTime.ElapsedGameTime.Milliseconds/1000f;
+                if (speakTimer <= 0)
+                {
+                    speakTimer = 0.15f;
+                    talk[new Random().Next(talk.Length)].Play(1, (float)(new Random().NextDouble()), 1);
+                }
+                Textbox.isShown = true;
+            }
+            else {
+                talking = false;
+                speakTimer = 0;
+
+                Textbox.isShown = false;
+            }
+            if (Keyboard.GetState().IsKeyDown(Keys.A) != switchButton) {
+                if (switchButton) ringMode = !ringMode;
+                switchButton = !switchButton;
+            }
+            (stario.T() as AnimationCollection).SetAnimation(ringMode ? 2 : talking ? 1 : 0);
+
+            Textbox.position = new Vector2(200, -200) + stario.position;
+            textLoc = new Vector2(80, -300) + stario.position;
+
+            foreach (GameObject gameObject in gameObjects) {
+                gameObject.Tick(gameTime, this);
+            }
+
             base.Update(gameTime);
         }
+
+        Vector2 textLoc = new Vector2(80, -300);
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
 
-            renderer.Draw(new System.Collections.Generic.List<GameObject> { Stario });
+            renderer.Draw(gameObjects, gameTime);
+
+            //TODO: Make text a gameobject as well
+            _spriteBatch.Begin();
+            if (Textbox.isShown) { 
+            _spriteBatch.DrawString(_font, "Points: " + stario.GetPoints(),
+                new Vector2(
+                    textLoc.X * Window.ClientBounds.Height / 800 + Window.ClientBounds.Width / 2,
+                    textLoc.Y * Window.ClientBounds.Height / 800 + Window.ClientBounds.Height / 2),
+                Color.Black, 0, new Vector2(), Window.ClientBounds.Height / 800f, SpriteEffects.None, 0);
+            }
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }

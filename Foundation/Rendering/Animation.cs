@@ -30,14 +30,18 @@ namespace Focus_App.Foundation.Rendering
         }
 
         public int Frame() { return frame; }
+        public void SetFrame(int frame) { this.frame = frame; }
         public Sprite GetSprite(int index) { return sprites[index]; }
 
         public Sprite Tick(GameTime gameTime)
         {
+            if (time_step.Count <= frame) { 
+                return sprites[frame];
+            }
             time += gameTime.ElapsedGameTime.Milliseconds / 1000f;
             if (time >= time_step[frame])
             {
-                frame = (frame + 1) % time_step.Count;
+                frame = (frame + 1) % sprites.Count;
                 time = 0;
             }
             return sprites[frame];

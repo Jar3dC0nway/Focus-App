@@ -16,6 +16,8 @@ namespace Focus_App.Foundation
         public Vector2 scale;
         public float rotation;
 
+        public bool isShown = true;
+
         public GameObject()
         {
             texture_renderable = new Sprite(null);
@@ -47,5 +49,9 @@ namespace Focus_App.Foundation
             return this;
         }
         public float R() { return rotation; }
+
+        public virtual void Tick(GameTime gameTime, Game1 caller) { 
+            
+        }
     }
 }
