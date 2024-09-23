@@ -47,6 +47,7 @@ namespace Focus_App.Foundation
                 Debug.WriteLine("File created");
                 return false;
             }
+            if (level == null) return false;
             JsonObject leveldata = JsonObject.Parse(jsonData) as JsonObject;
             JsonObject jObject = leveldata[level] as JsonObject;
             if (jObject != null) { //Found level
@@ -103,6 +104,7 @@ namespace Focus_App.Foundation
         }
 
         private static void UpdatePositionData() {
+            if (positions.Count == 0) return;
             JsonArray frame = positions[moveIndex].AsArray();
             x0 = x1;
             y0 = y1;

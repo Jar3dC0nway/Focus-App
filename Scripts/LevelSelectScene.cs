@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,6 +21,15 @@ namespace Focus_App.Scripts
 
         public override void LoadScene() {
             String[] levelNames = LevelReader.GetLevelNames();
+            if (levelNames == null) {
+                MainMenu menu = new MainMenu();
+                //TextLabel levelsNotFound = new TextLabel();
+                //levelsNotFound.text = "No levels in level_data.json, try adding one in level editor first";
+                //levelsNotFound.P(-500, 350);
+                //menu.gameObjects.Add(levelsNotFound);
+                Game1.INSTANCE.SwitchScene(menu);
+                return;
+            }
             levelButtons = new Button[levelNames.Length];
             for (int i = 0; i < levelNames.Length; i++) {
                 Button levelButton = new Button();

@@ -81,6 +81,7 @@ namespace Focus_App
 
         protected override void LoadContent()
         {
+            LevelReader.SetLevel(null); //Create level_data if not found
             spriteBatch = new SpriteBatch(GraphicsDevice);
             renderer = new Renderer(Content, spriteBatch);
             Window.ClientSizeChanged += new EventHandler<EventArgs>(SetWindowSize);
