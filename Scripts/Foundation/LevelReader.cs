@@ -1,4 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Focus_App.Scripts.Distractions;
+using Focus_App.Scripts.Foundation;
+using Focus_App.Scripts.Foundation.Objects;
+using Focus_App.Scripts.Foundation.Objects.Distractions;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +25,8 @@ namespace Focus_App.Foundation
 
         private static string level = "", author = "";
         private static JsonArray positions = new JsonArray();
-        
+        private static JsonArray distractions = new JsonArray();
+
         private static int moveIndex = 0;
         private static double animationTime = 0;
 
@@ -31,17 +36,16 @@ namespace Focus_App.Foundation
 
         private static int difficulty;
 
-        public static void SetLevel(String levelName) { 
+        public static bool SetLevel(String levelName) { 
             level = levelName;
-            string jsonData = "{\"tutorial\":{\"author\":\"me\",\"difficulty\":0,\"positions\":[]}}";
-            try
-            {
+            string jsonData = "{\"tutorial\":{\"author\":\"me\",\"difficulty\":0,\"positions\":[],\"distractions\":[]}}";
+            try {
                 jsonData = File.ReadAllText(JSON_FILENAME);
             }
             catch {
                 File.WriteAllText(JSON_FILENAME, jsonData);
                 Debug.WriteLine("File created");
-                return;
+                return false;
             }
             JsonObject leveldata = JsonObject.Parse(jsonData) as JsonObject;
             JsonObject jObject = leveldata[level] as JsonObject;
@@ -49,14 +53,53 @@ namespace Focus_App.Foundation
                 author = jObject["author"].GetValue<string>();
                 difficulty = jObject["difficulty"].GetValue<int>();
                 positions = jObject["positions"] as JsonArray;
+                distractions = jObject["distractions"] as JsonArray;
             }
-
+            else {
+                return false;
+            }
             //Debug.WriteLine($"Data: {author} {difficulty} {positions}");
 
 
             moveIndex = 0;
             animationTime = 0;
             UpdatePositionData();
+
+            return true;
+        }
+
+        public static void SetDataOfLevel(String levelName, JsonArray positions, JsonArray distractions) {
+            string jsonData;
+            try
+            {
+                jsonData = File.ReadAllText(JSON_FILENAME);
+            }
+            catch {
+                return;
+            }
+
+            JsonObject levelData = JsonObject.Parse(jsonData) as JsonObject;
+            JsonObject level = new JsonObject();
+            level.Add("author", "me");
+            level.Add("difficulty", 0);
+            level.Add("positions", positions);
+            level.Add("distractions", distractions);
+
+            if (levelData[levelName] == null)
+            {
+                levelData.Add(levelName, level);
+            }
+            else {
+                levelData[levelName] = level;
+            }
+
+            jsonData = levelData.ToJsonString();
+            try {
+                File.WriteAllText(JSON_FILENAME, jsonData);
+            }
+            catch { 
+                return; 
+            }
         }
 
         private static void UpdatePositionData() {
@@ -73,8 +116,28 @@ namespace Focus_App.Foundation
             return (float)(animationTime / frameTime);
         }
 
+        public static JsonArray GetDistractions() {
+            return distractions;
+        }
+
+        public static List<GameObject> GetDistractionsAsGameObjects() { 
+            List<GameObject> gameObjects = new List<GameObject>();
+            foreach (JsonArray distraction in distractions.AsArray()) {
+                GameObject gameObject = new DCloud()
+                    .P((float)distraction[0].AsValue(), (float)distraction[1].AsValue());
+                ((Distraction)gameObject).timeStart = (int)distraction[2].AsValue();
+                gameObjects.Add(gameObject);
+            }
+            return gameObjects;
+        }
+
+        public static JsonArray GetPositions() {
+            return positions;
+        }
+
         public static Vector2 GetPosition(GameTime gameTime) {
             animationTime += gameTime.ElapsedGameTime.TotalSeconds;
+            if (positions.Count == 0) return Vector2.Zero;
             if (animationTime >= frameTime) {
                 animationTime -= frameTime;
                 moveIndex = (moveIndex + 1) % positions.Count;
@@ -93,6 +156,26 @@ namespace Focus_App.Foundation
             float offset = (float)(0.25f - Math.Pow(0.5f - ratio, 2));
 
             return new Vector2(x0 + (x1 - x0) * ratio, y0 + (y1 - y0) * ratio) + curveOffset.Value * offset * curve;
+        }
+
+        public static String[] GetLevelNames() {
+            String[] levelNames = new String[0];
+            string jsonData;
+            try
+            {
+                jsonData = File.ReadAllText(JSON_FILENAME);
+            }
+            catch {
+                return null;
+            }
+
+            JsonObject values = JsonObject.Parse(jsonData).AsObject();
+            levelNames = new String[values.Count];
+            for (int i = 0; i < values.Count; i++) {
+                levelNames[i] = values.ElementAt(i).Key.ToString();
+            }
+
+            return levelNames;
         }
     }
 }

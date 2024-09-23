@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Focus_App.Foundation
+namespace Focus_App.Scripts.Foundation.Objects
 {
     public class GameObject
     {
@@ -17,6 +17,7 @@ namespace Focus_App.Foundation
         public float rotation;
 
         public bool isShown = true;
+        public bool markRemoved = false;
 
         public GameObject()
         {
@@ -30,16 +31,31 @@ namespace Focus_App.Foundation
             texture_renderable = renderable;
             return this;
         }
+        public GameObject T(Texture2D texture)
+        {
+            texture_renderable = new Sprite(texture);
+            return this;
+        }
         public Renderable T() { return texture_renderable; }
-        public GameObject P(float x, float y)
+        public virtual GameObject P(float x, float y)
         {
             position = new Vector2(x, y);
             return this;
         }
-        public Vector2 P() { return position; }
+        public virtual GameObject P(Vector2 other)
+        {
+            position = other;
+            return this;
+        }
+        public virtual Vector2 P() { return position; }
         public GameObject S(float x, float y)
         {
             scale = new Vector2(x, y);
+            return this;
+        }
+        public GameObject S(Vector2 other)
+        {
+            scale = other;
             return this;
         }
         public Vector2 S() { return scale; }
@@ -50,8 +66,9 @@ namespace Focus_App.Foundation
         }
         public float R() { return rotation; }
 
-        public virtual void Tick(GameTime gameTime, Game1 caller) { 
-            
+        public virtual void Tick(GameTime gameTime)
+        {
+
         }
     }
 }
