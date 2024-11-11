@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.IsolatedStorage;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -38,7 +40,7 @@ namespace Focus_App.Foundation
 
         public static bool SetLevel(String levelName) { 
             level = levelName;
-            string jsonData = "{\"tutorial\":{\"author\":\"me\",\"difficulty\":0,\"positions\":[],\"distractions\":[]}}";
+            string jsonData = "{\"tutorial\":{\"author\":\"me\",\"difficulty\":0,\"positions\":[],\"distractions\":[],\"accuracy\":0}}";
             try {
                 jsonData = File.ReadAllText(JSON_FILENAME);
             }
@@ -85,6 +87,7 @@ namespace Focus_App.Foundation
             level.Add("difficulty", 0);
             level.Add("positions", positions);
             level.Add("distractions", distractions);
+            level.Add("accuracy", 0);
 
             if (levelData[levelName] == null)
             {
@@ -101,6 +104,42 @@ namespace Focus_App.Foundation
             catch { 
                 return; 
             }
+        }
+
+        private async static void UpdateLeaderboard(String levelName, float score) {
+            Debug.WriteLine(levelName + " updating...");
+            var json = $"{{\"player\": {score}}}";
+            StringContent content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            await Registry.CLIENT.PatchAsync(Registry.LEADERBOARD_URL + levelName + ".json", content);
+            Debug.WriteLine("Score updated!");
+        }
+
+        public static float SetScoreIfHighscoreOfLevel(float score) {
+            string jsonData;
+            try {
+                jsonData = File.ReadAllText(JSON_FILENAME);
+            }
+            catch {
+                return score;
+            }
+            JsonObject levelData = JsonObject.Parse(jsonData) as JsonObject;
+            JsonObject l = levelData[level] as JsonObject;
+            float oldScore = (float)l["accuracy"].AsValue();
+            if (score > oldScore) {
+                UpdateLeaderboard(level, score);
+                l["accuracy"] = score;
+                levelData[level] = l;
+                jsonData = levelData.ToJsonString();
+                try {
+                    File.WriteAllText(JSON_FILENAME, jsonData);
+                }
+                catch {
+                    return score;
+                }
+                return score;
+            }
+
+            return oldScore;
         }
 
         private static void UpdatePositionData() {
@@ -178,6 +217,30 @@ namespace Focus_App.Foundation
             }
 
             return levelNames;
+        }
+        public static float[] GetLevelScores() {
+            float[] levelScores = new float[0];
+            string jsonData;
+            try
+            {
+                jsonData = File.ReadAllText(JSON_FILENAME);
+            }
+            catch
+            {
+                return null;
+            }
+
+            JsonObject values = JsonObject.Parse(jsonData).AsObject();
+            levelScores = new float[values.Count];
+            for (int i = 0; i < values.Count; i++)
+            {
+                string levelName = values.ElementAt(i).Key.ToString();
+                JsonObject l = values[levelName] as JsonObject;
+                float score = (float)l["accuracy"].AsValue();
+                levelScores[i] = score;
+            }
+
+            return levelScores;
         }
     }
 }

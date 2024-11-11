@@ -13,6 +13,7 @@ using Focus_App.Scripts;
 using Focus_App.Scripts.Foundation.Utility;
 using Focus_App.Scripts.Foundation.Rendering.UI;
 using Focus_App.Scripts.Foundation.Objects;
+using Focus_App.Scripts.Foundation;
 
 namespace Focus_App
 {
@@ -25,7 +26,7 @@ namespace Focus_App
 
         bool RUN_CAMERA = false;
         public Renderer renderer;
-        Scene scene;
+        public Scene scene;
         public static Game1 INSTANCE;
         public SpriteFont font;
 
@@ -36,6 +37,8 @@ namespace Focus_App
 
         private List<GameObject> blackBars = new List<GameObject>();
         private int[] barDimensions = { 21800, 16000};
+
+        private GameObject eyeReticle;
 
 
         public Game1()
@@ -72,10 +75,31 @@ namespace Focus_App
             base.Initialize();
         }
 
+        private Vector2 _GetEyeFromString(string eye) {
+            string[] coords = eye.Replace("(", "").Replace(")", "").Split(",");
+            if (coords.Length < 2) { return new Vector2(9999, 9999); }
+            return new Vector2(int.Parse(coords[0]), int.Parse(coords[1]));
+        }
+
         private async Task CameraAsync() {
             await Task.Run(() =>
             {
-                Debug.WriteLine(DateTime.Now + " " + process.StandardOutput.ReadLine());
+                string output = process.StandardOutput.ReadLine();
+                eyeReticle.isShown = true;
+                if (output != null) {
+                    string[] args = output.Split("|");
+                    if (args.Length > 0 && !args[2].Equals("None"))
+                    {
+                        Vector2 leftEye = _GetEyeFromString(args[0]);
+                        Vector2 rightEye = _GetEyeFromString(args[1]);
+                        float x = float.Parse(args[2]);
+                        float y = float.Parse(args[3]);
+                        eyeReticle.P(Vector2.Lerp(eyeReticle.P(), renderer.WindowSize * new Vector2(-x + 0.6f, y - 0.8f), 1.0f));
+
+                    }
+                }
+
+                //Debug.WriteLine(DateTime.Now + " " + process.StandardOutput.ReadLine());
             });
         }
 
@@ -97,7 +121,7 @@ namespace Focus_App
                 blackBars.Add(bar);
             }
 
-            // TODO: use this.Content to load your game content here
+            eyeReticle = new GameObject().T(new Sprite(Registry.RETICLE));
         }
 
         public void SetWindowSize(object sender, EventArgs e)
@@ -130,6 +154,7 @@ namespace Focus_App
             }
 
             if (process != null) CameraAsync();
+            else eyeReticle.isShown = false;
 
             //Debug.WriteLine(DateTime.Now + " " + process.StandardOutput.ReadLine());
 
@@ -164,6 +189,7 @@ namespace Focus_App
             renderer.Draw(scene.gameObjects, gameTime);
             scene.Draw(gameTime);
             renderer.Draw(blackBars, gameTime);
+            renderer.Draw(new List<GameObject> { eyeReticle }, gameTime);
             base.Draw(gameTime);
         }
 

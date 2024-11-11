@@ -18,7 +18,7 @@ namespace Focus_App.Foundation.Rendering
     {
         ContentManager contentManager;
         SpriteBatch spriteBatch;
-        Vector2 WindowSize = new Vector2();
+        public Vector2 WindowSize = new Vector2();
         private int SCREEN_SCALE = 800;
 
 
@@ -40,12 +40,12 @@ namespace Focus_App.Foundation.Rendering
         }
 
         private void _DrawText(TextLabel text) {
-            Vector2 offset = text.centered ? _PositionInScreenSpace(Game1.INSTANCE.font.MeasureString(text.text) * 0.5f) 
+            Vector2 offset = text.centered ? _PositionInScreenSpace(Game1.INSTANCE.font.MeasureString(text.text) * text.S() * 0.5f) 
                 - new Vector2(WindowSize.X / 2.0f, WindowSize.Y / 2.0f) : Vector2.Zero;
 
             Game1.INSTANCE.spriteBatch.DrawString(Game1.INSTANCE.font, text.text,
                 _GetGameObjectLocation(text) - offset,
-                    text.textColor, 0, new Vector2(), Game1.INSTANCE.Window.ClientBounds.Height / 800f, SpriteEffects.None, 0);
+                    text.textColor, 0, new Vector2(), Game1.INSTANCE.Window.ClientBounds.Height * text.S() / 800f, SpriteEffects.None, 0);
         }
 
         private void _DrawTextBox(TextBox textBox, GameTime gameTime)
@@ -57,7 +57,6 @@ namespace Focus_App.Foundation.Rendering
         }
 
         private void _DrawButton(Button button, GameTime gameTime) {
-            button.S(Game1.INSTANCE.font.MeasureString(button.text) * 0.016f + Vector2.One * 0.3f);
             _DrawGameObject(button, gameTime, button.color);
 
             _DrawText(button.label);

@@ -22,7 +22,10 @@ namespace Focus_App.Scripts.Foundation.Rendering.UI.Button
         public String text
         {
             get { return label.text; }
-            set { label.text = value; }
+            set { 
+                label.text = value;
+                S(Game1.INSTANCE.font.MeasureString(text) * 0.016f + Vector2.One * 0.3f);
+            }
         }
 
         public Button() {

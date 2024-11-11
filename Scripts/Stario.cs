@@ -1,6 +1,7 @@
 ﻿using Focus_App.Foundation;
 using Focus_App.Foundation.Rendering;
 using Focus_App.Scripts.Foundation.Objects;
+using Focus_App.Scripts.Foundation.Rendering.UI.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Framework.Utilities.Deflate;
@@ -22,6 +23,9 @@ namespace Focus_App
         STARIO_RING = "Textures/stario_ring";
 
         float points = 0;
+        float total = 0;
+        bool done = false;
+        bool textAdded = false;
 
         public Stario() {
             Renderer renderer = Game1.INSTANCE.renderer;
@@ -40,17 +44,34 @@ namespace Focus_App
 
         public override void Tick(GameTime gameTime)
         {
+            if (done) {
+                if (!textAdded) {
+                    TextLabel textLabel = new TextLabel();
+                    textLabel.text = (points / total) + "% Accuracy";
+                    textLabel.P(-300, -200);
+                    Game1.INSTANCE.scene.gameObjects.Add(textLabel);
+                    LevelReader.SetScoreIfHighscoreOfLevel(points / total);
+                }
+                base.Tick(gameTime);
+                return;
+            }
+            float delta = (float)gameTime.ElapsedGameTime.TotalMilliseconds / 1000f;
             if (GetDistance(Game1.INSTANCE).Length() < 80)
             {
-                points++;
+                points += delta;
             }
             else {
-                points--;
+                points -= delta;
             }
+            total += delta;
             //Debug.WriteLine(points);
             //position = new Vector2(MathF.Cos((float)(gameTime.TotalGameTime.TotalSeconds)) * 100f, MathF.Sin((float)(gameTime.TotalGameTime.TotalSeconds) * 2) * 10f);
 
             position = LevelReader.GetPosition(gameTime);
+
+            if (points > 20) {
+                done = true;
+            }
 
             base.Tick(gameTime);
         }
